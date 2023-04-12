@@ -1,32 +1,35 @@
 import os
 import argparse
-import numpy as np
+
 import pandas as pd
-from basico import *
 import matplotlib.pyplot as plt
+from basico import load_model, T, set_task_settings, run_parameter_estimation, save_model
 
 
 
-def run_parameter_estimation_(copasi_model_file, out_parameter_estimation, no_of_generations, population_size, update_model):
-	load_model(copasi_model_file)
-	set_task_settings(T.PARAMETER_ESTIMATION,
+def run_parameter_estimation_(copasi_model_file, out_parameter_estimation, no_of_generations, population_size):
+    """ 
+    Runs parameter estimation, and creates a new parameter set from the 
+    results to same model file.
+    """
+    load_model(copasi_model_file)
+    set_task_settings(T.PARAMETER_ESTIMATION,
 						settings = {'method': {'Number of Generations': no_of_generations, 'Population Size': population_size, 'name': 'Genetic Algorithm'},
 									'report': {'filename': out_parameter_estimation, 'append': False, 'confirm_overwrite': True}})
 	
-	run_parameter_estimation(method='Genetic Algorithm', calculate_statistics=True, 
-                        use_initial_values=True, update_model=update_model)
-	if update_model:
-		save_model(filename=copasi_model_file.replace('.cps', '_2.cps'))
+    run_parameter_estimation(method='Genetic Algorithm', calculate_statistics=True, 
+                        use_initial_values=True, create_parametersets=True)
+    save_model(filename=copasi_model_file)
 
 
 
 def extract_from_estimation_file(estimation_file, start_identifier, stop_identifier=None):
-    ## extract progress of fit, estimation time course dataframes
+    """Extract progress of fit, estimation time course dataframes."""
     extract_res = []
     to_append = False
     with open(estimation_file) as f:
         for line in f:
-            line = line.rstrip('\n') #remove new line character
+            line = line.rstrip('\n') # remove new line character
             if line.startswith(start_identifier):
                 cols = line.split('\t')
                 col_len = len(cols)
@@ -48,35 +51,39 @@ def extract_from_estimation_file(estimation_file, start_identifier, stop_identif
 
 
 def plot_parameter_estimation_results(estimation_file, out_progress_of_fit_plot, out_model_vs_meaured_plot):
-	progress_of_fit = extract_from_estimation_file(estimation_file, '[Function Evaluations]')
-	progress_of_fit.drop('[Best Parameters]', axis=1, inplace=True)
-	progress_of_fit.rename(columns={'[Function Evaluations]': 'Function Evaluations', '[Best Value]': 'Best Value'}, inplace=True)
-	progress_of_fit = progress_of_fit.astype(float)
-	fit_fig1, f1 = plt.subplots(figsize=(20,10))
-	f1.plot(progress_of_fit['Function Evaluations'], progress_of_fit['Best Value'])
-	f1.set_xlabel('Function Evaluations')
-	f1.set_ylabel('Best Value')
-	fit_fig1.savefig(out_progress_of_fit_plot, facecolor='white', edgecolor='none')
+    """
+     Plots progress of fit and model vs experimental measurements.
+    """
+    progress_of_fit = extract_from_estimation_file(estimation_file, '[Function Evaluations]')
+    progress_of_fit.drop('[Best Parameters]', axis=1, inplace=True)
+    progress_of_fit.rename(columns={'[Function Evaluations]': 'Function Evaluations', '[Best Value]': 'Best Value'}, inplace=True)
+    progress_of_fit = progress_of_fit.astype(float)
+    fit_fig1, f1 = plt.subplots(figsize=(20,10))
+    f1.plot(progress_of_fit['Function Evaluations'], progress_of_fit['Best Value'])
+    f1.set_xlabel('Function Evaluations')
+    f1.set_ylabel('Best Value')
+    fit_fig1.savefig(out_progress_of_fit_plot, facecolor='white', edgecolor='none')
 
-	estimation_time_course = extract_from_estimation_file(estimation_file, 'Row', stop_identifier='Objective Value')
-	estimation_time_course.drop(0, axis=0, inplace=True)
-	estimation_time_course.set_index('Row', inplace=True)
-	estimation_time_course = estimation_time_course.astype(float)
-	measured_metabolites = ['PYR', 'MVAP', 'MVA', 'MEP', 'FPP', 'DXP', 'Y', 'FBP', 'Glcex', 'LACex', 'ACEex', 'ETHex', 'LIMex', 'GAP', 'Z']   #update as necessary
-	fig, axs = plt.subplots(5, 3, figsize=(20, 20))   #update as necessary
-	row, col = 0, 0
-	for m in measured_metabolites:
-	    fit = estimation_time_course[f'[{m}](Fit)']
-	    measured = estimation_time_course[f'[{m}](Data)']
-	    axs[row][col].plot(estimation_time_course['Time'], fit)
-	    axs[row][col].scatter(estimation_time_course['Time'], measured)
-	    axs[row][col].set_title(m)
-	    col += 1
-	    if col % 3 == 0:
-	        row += 1
-	        col = 0
+    estimation_time_course = extract_from_estimation_file(estimation_file, 'Row', stop_identifier='Objective Value')
+    estimation_time_course.drop(0, axis=0, inplace=True)
+    estimation_time_course.set_index('Row', inplace=True)
+    estimation_time_course = estimation_time_course.astype(float)
+    measured_metabolites = ['DXP', 'MVA', 'DHAP+GAP', 'FBP', 'FPP', 'GPP', 'MVAP', 'PYR', 'Y', 'G6P+F6P', 'Glcex', 'LACex', 'ACEex', 'LIMex']   # update as necessary
+    fig, axs = plt.subplots(7, 2, figsize=(15, 25))   # update as necessary
+    row, col = 0, 0
+    for m in measured_metabolites:
+        front = 'Values' if '+' in m else ''
+        fit = estimation_time_course[f'{front}[{m}](Fit)']
+        measured = estimation_time_course[f'{front}[{m}](Data)']
+        axs[row][col].plot(estimation_time_course['Time'], fit)
+        axs[row][col].scatter(estimation_time_course['Time'], measured)
+        axs[row][col].set_title(m)
+        col += 1
+        if col % 2 == 0:
+            row += 1
+            col = 0
 	        
-	fig.savefig(out_model_vs_meaured_plot, facecolor='white', edgecolor='none')
+    fig.savefig(out_model_vs_meaured_plot, facecolor='white', edgecolor='none')
 
 
 
