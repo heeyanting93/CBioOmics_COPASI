@@ -28,7 +28,9 @@ To run the `run_parameter_estimation.py` script:
 
 ## Usage
 To use the `run_parameter_estimation.py` script, set up parameter estimation run settings (loading and mapping of time-series data etc) within COPASI and save the model file. In terminal type the following command:
-> python3 run_parameter_estimation.py --copasi_model_file /path/to/model/file/MiMB_model.cps --parameter_estimation_file PE.txt --progress_of_fit_plot PE_progress_of_fit.png --model_vs_meaured_plot PE_model_vs_measured.png --run_PE
+```shell
+$ python3 run_parameter_estimation.py --copasi_model_file /path/to/model/file/MiMB_model.cps --parameter_estimation_file PE.txt --progress_of_fit_plot PE_progress_of_fit.png --model_vs_meaured_plot PE_model_vs_measured.png --run_PE
+```
 
 The script has been set to run parameter estimation at 1000 generations with a population size of 300, per recommendation in the book chapter. We have set `create_parametersets=True`, instead of `update_model=True`, so to allow users to assess the results before deciding whether to update the model's parameters with the estimated parameters. 
 
