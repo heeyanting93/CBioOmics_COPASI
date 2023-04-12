@@ -93,16 +93,19 @@ def main():
 	parser.add_argument('--parameter_estimation_file', type=str, required=True, help='filename of parameter estimation .txt file')
 	parser.add_argument('--progress_of_fit_plot', type=str, required=True, help='filename of progress of fit plot')
 	parser.add_argument('--model_vs_meaured_plot', type=str, required=True, help='filename of model vs meaured plot')
+	parser.add_argument('--run_PE', type=bool, default=False, action=argparse.BooleanOptionalAction, help='whether to run parameter estimation')
 	parser.add_argument('--no_of_generations', type=int, default=1000)
 	parser.add_argument('--population_size', type=int, default=300)
-	parser.add_argument('--update_model', type=bool, default=False, required=True)
 	args = parser.parse_args()
 
 	dirname = os.path.dirname(args.copasi_model_file)
 	out_parameter_estimation = os.path.join(dirname, args.parameter_estimation_file)
 	out_progress_of_fit_plot = os.path.join(dirname, args.progress_of_fit_plot)
 	out_model_vs_meaured_plot = os.path.join(dirname, args.model_vs_meaured_plot)
-	run_parameter_estimation_(args.copasi_model_file, out_parameter_estimation, args.no_of_generations, args.population_size, args.update_model)
+
+	if args.run_PE:
+		print('running PE...')
+		run_parameter_estimation_(args.copasi_model_file, out_parameter_estimation, args.no_of_generations, args.population_size)
 	plot_parameter_estimation_results(out_parameter_estimation, out_progress_of_fit_plot, out_model_vs_meaured_plot)
 
 
